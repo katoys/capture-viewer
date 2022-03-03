@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <title>Capture Viewer</title>
+        <style>
+            html, body, #capture-viewer-app {
+                height: 100%;
+                margin: 0;
+            }
+            body {
+                font-family: monospace;
+                font-size: 11pt;
+                color: #333333;
+                background-color: #E5E3C9;
+                overflow: hidden;
+            }
+            #capture-viewer-app {
+                display: flex;
+            }
+            #capture-viewer-app .header {
+                display: flex;
+                align-items: center;
+                height: 3rem;
+                background-color: #94B49F;
+                border-color: #789395;
+                border-width: 0 0 0 2rem;
+                border-style: solid;
+                font-size: 1.2rem;
+            }
+            #capture-viewer-app .header > * {
+                margin-left: 1rem;
+            }
+            #capture-viewer-app .footer {
+                height: 2rem;
+                background-color: #94B49F;
+            }
+            #capture-viewer-app > #index {
+                width: 35rem;
+            }
+            #capture-viewer-app > #index .body {
+                height: calc(100% - 5rem);
+                overflow-y: scroll;
+            }
+            #capture-viewer-app > #index .item {
+                display: flex;
+                margin-left: 1rem;
+            }
+            #capture-viewer-app > #index .item:first-child {
+                margin-top: 1rem;
+            }
+            #capture-viewer-app > #index .item:last-child {
+                margin-bottom: 1rem;
+            }
+            #capture-viewer-app > #index .indent {
+                width: 1.5rem;
+            }
+            #capture-viewer-app > #index .selectable, #capture-viewer-app > #index .selected {
+                padding: .2rem .7rem;
+                border-radius: .8rem;
+            }
+            #capture-viewer-app > #index .selectable {
+                color: #5e7475;
+                cursor: pointer;
+            }
+            #capture-viewer-app > #index .selectable:hover {
+                background-color: #B4CFB0;
+            }
+            #capture-viewer-app > #index .selected {
+                color: #bfdbba;
+                background-color: #789395;
+            }
+            #capture-viewer-app > #viewer {
+                width: calc(100% - 35rem);
+            }
+            #capture-viewer-app > #viewer .header {
+                justify-content: space-between;
+            }
+            #capture-viewer-app > #viewer .capture-source {
+                font-size: .7em;
+                margin-right: 1rem;
+            }
+            #capture-viewer-app > #viewer .body {
+                height: calc(100% - 5rem);
+                overflow-y: scroll;
+            }
+            #capture-viewer-app > #viewer #capture-image {
+                width: 100%;
+            }
+            #capture-viewer-app > #viewer .no-image {
+                margin-top: 1rem;
+                margin-left: calc(50% - 5rem);
+                color: #789395;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="capture-viewer-app">
+            <div id="index">
+                <div class="header">
+                    <div>INDEX</div>
+                </div>
+                <div class="body">
+                    <div v-for="capture in captures" class="item">
+                        <span v-for="n of capture.indent" class="indent"></span>
+                        <span class="selected" v-if="viewingCapture.id == capture.id">{{ capture.title }}</span>
+                        <a class="selectable" v-else @click="changeCapture(capture.id)">{{ capture.title }}</a>
+                    </div>
+                </div>
+                <div class="footer"></div>
+            </div>
+            <div id="viewer">
+                <div class="header">
+                    <div class="capture-title">{{ viewingCapture.title }}</div>
+                    <a v-if="viewingCapture.sourceURL != null" class="capture-source" :href="viewingCapture.sourceURL" target="capture_image_source">別タブでキャプチャ取得元を開く</a>
+                </div>
+                <div class="body">
+                    <img v-if="viewingCapture.imagePath != null" id="capture-image" :src="`./img/${viewingCapture.imagePath}`"></img>
+                    <div v-else class="no-image">No image</div>
+                </div>
+                <div class="footer"></div>
+            </div>
+        </div>
+        <script src="https://unpkg.com/vue@3.2.31/dist/vue.global.js"></script>
+        <script src="./captures.js"></script>
+        <script>
+            const viewingCapture = captures[0]
+            const loadingCapture = new Capture(0, '読み込み中...')
+            const findCapture = (captures, captureId) => new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const capture = captures.find(capture => capture.id === captureId)
+                    if(capture) resolve(capture)
+                    else reject(new Error('お探しの画像が見つかりません。'))
+                }, 0)
+            })
+            Vue.createApp({
+                data() {
+                    return { captures, viewingCapture }
+                },
+                methods: {
+                    async changeCapture(captureId) {
+                        this.viewingCapture = loadingCapture
+                        this.viewingCapture = await findCapture(this.captures, captureId).catch(error => new Capture(0, error.message))
+                    }
+                }
+            }).mount('#capture-viewer-app')
+        </script>
+    </body>
+</html>
